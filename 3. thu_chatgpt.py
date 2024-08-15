@@ -5,7 +5,7 @@ import RPi.GPIO as GPIO
 from adafruit_servokit import ServoKit
 import time
 import Adafruit_PCA9685
-import tkinter 
+import tkinter
 from tkinter import *
 import customtkinter as ctk
 import threading
@@ -151,18 +151,9 @@ def pillOut(index):
     set_throttle(evening_pills[index].Echannel, 1)
     time.sleep(10)
     stop_servos()
-    
-    obstacle_state1 = GPIO.input(SENSOR_PIN1)
-    obstacle_state2 = GPIO.input(SENSOR_PIN2)
-    obstacle_state3 = GPIO.input(SENSOR_PIN3)
-    obstacle_state4 = GPIO.input(SENSOR_PIN4)
-    
-    if obstacle_state1 == GPIO.LOW:
-        print("An obstacle is removed -- Pill has dropped")
-        set_throttle2(evening_pills[index].Echannel, 0)
-        return True
-    else:
-        print("An obstacle is removed")
+
+count = 0
+streakCount = 0
 
 # GUI Setup
 ctk.set_appearance_mode("light")
@@ -172,62 +163,73 @@ window = ctk.CTk()
 window.title('PillPal GUI')
 window.geometry("800x480")
 
+# Streak Frame
 streakframe = ctk.CTkFrame(window, width=800, height=480)
 streakframe.pack(padx=5, pady=5)
 streakframe.pack_propagate(False)
 
-streak = ctk.CTkLabel(streakframe, height=800, width=800, text="You're on a \n {streakCount} day streak!", font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
+streak = ctk.CTkLabel(streakframe, height=800, width=800, text=f"You're on a \n {streakCount} day streak!", font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
 streak.pack()
 
 hi = ctk.CTkLabel(streakframe, width=800, height=80, text="Hi, PillPal User", fg_color='#ffff9c', text_color='black', font=('Sans-Serif', 30, 'bold'))
 hi.place(relx=0.5, rely=0.08, anchor=tkinter.CENTER)
 
+# Ready Frame
 readyframe = ctk.CTkFrame(window, width=800, height=480)
 readyframe.pack(padx=5, pady=5)
 readyframe.pack_propagate(False)
+
 label1 = ctk.CTkLabel(readyframe, width=800, height=500, text="It's time to take your medication.", text_color='black', font=('Sans-Serif', 35, 'bold'), fg_color='#ffb9d5')
 label1.place(relx=0.5, rely=0.45, anchor=tkinter.CENTER)
 
+# Dispense Frame
 dispenseframe = ctk.CTkFrame(window, width=800, height=480)
 dispenseframe.pack(padx=5, pady=5)
 dispenseframe.pack_propagate(False)
+
 label2 = ctk.CTkLabel(dispenseframe, width=800, height=500, text="Dispensing...", text_color='black', font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
 label2.place(relx=0.5, rely=0.5, anchor=tkinter.CENTER)
 
-def show_page(index):
-    for i, page in enumerate(pages):
-        if i == index:
-            page.pack(fill='both', expand=True)
-        else:
-            page.pack_forget()
+# Alert Frame
+alertframe = ctk.CTkFrame(window, width=800, height=480)
+alertframe.pack(padx=5, pady=5)
+alertframe.pack_propagate(False)
+alertframe.pack_forget()  # Hide the alert frame initially
 
+alertlabel = ctk.CTkLabel(alertframe, width=800, height=500, text="You have {days} day(s) of {name} left", text_color='black', font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
+alertlabel.place(relx=0.5, rely=0.55, anchor=tkinter.CENTER)
+
+hi = ctk.CTkLabel(alertframe, width=800, height=80, text="Hi, PillPal User", fg_color='#ffff9c', text_color='black', font=('Sans-Serif', 30, 'bold'))
+hi.pack(padx=10, pady=10)
+
+# Button to switch pages
 def next_page():
     global count
-    if count < len(pages) - 1:
-        for p in pages:
-            p.pack_forget()
-        count += 1
-        page = pages[count]
-        page.pack(padx=5, pady=5)
+    count = (count + 1) % len(pages)
+    show_page(count)
 
-button1 = ctk.CTkButton(readyframe, text="Dispense Now", text_color='black', font=('Sans-Serif', 20, 'bold'), width=300, height=75, fg_color='#ff78ae', border_width=5, border_color='red', hover_color='red', command=next_page)
+def show_page(page_index):
+    for frame in pages:
+        frame.pack_forget()
+    pages[page_index].pack(padx=5, pady=5)
+
+button1 = ctk.CTkButton(readyframe, text="Continue", font=('Sans-Serif', 20, 'bold'), width=300, height=75, fg_color='#ff78ae', border_width=5, border_color='red', hover_color='red', command=next_page)
 button1.place(relx=0.5, rely=0.65, anchor=tkinter.CENTER)
 
-pages = [streakframe, readyframe, dispenseframe]
-count = 0
+pages = [streakframe, readyframe, dispenseframe, alertframe]
 
 evening_pills.append(Evening(Ename="pill1", Econtainer="blue", Edosage=2, Equantity=10, Edescription="with food", Efrequency ="twice"))
-
 def run_background_tasks():
+    global streakCount
     client = connect_mqtt()
     subscribe(client)
     client.loop_start()
     
     while True:
-        time.sleep(60)
+        time.sleep(10)
         set_servos()
         print("Assigned the pill objects to servos!")
-        show_page(1)
+        show_page(1)  # Show Ready Page
         print("Ready to Dispense!")
         GPIO.output(led_pin, GPIO.HIGH)
         Buzz.start(20)
@@ -244,9 +246,18 @@ def run_background_tasks():
                 print("Calling pillOut(), dispensing has started.")
                 pillOut(i)
                 print("Exit completed. Next pill is dispensing...")
+                
+                # Show alert frame
+                alertlabel.configure(text=f"You have {evening_pills[i].Equantity - j - 1} day(s) of {evening_pills[i].Ename} left")
+                show_page(3)  # Show Alert Page
+                window.update_idletasks()
+                time.sleep(5)  # Keep the alert frame visible for 5 seconds
+                show_page(0)  # Return to the initial page
+                
             print("Next container is dispensing...")
             time.sleep(1)
-        
+        streakCount += 1
+        streak.configure(text=f"You're on a \n {streakCount} day streak!")
         print("Finished Dispensing!")
         show_page(0)
 
