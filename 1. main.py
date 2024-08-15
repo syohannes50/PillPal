@@ -268,6 +268,52 @@ evening_pills.append(Evening(Ename="pill1", Econtainer="blue", Edosage=1, Equant
 evening_pills.append(Evening(Ename="pill2", Econtainer="red", Edosage=1, Equantity=20, Edescription="with food", Efrequency ="twice"))
 evening_pills.append(Evening(Ename="pill3", Econtainer="green", Edosage=2, Equantity=30, Edescription="with food", Efrequency ="twice"))
 
+#DEFINE GLOBAL VARIABLES FOR GUI
+global button1_clicked = False
+global name = ""
+global days = 0
+global streakCount = 0
+global frequencyInt = 0
+
+def button():
+    #set flag to true when button is clicked
+    button1_clicked = True
+    print("button clicked!")
+    
+#MY FUNCTION
+def show_page(index):
+    for i, page in enumerate(pages):
+        if i == index:
+            page.pack(fill='both', expand=True)  # Show the frame
+        else:
+            page.pack_forget()  # Hide all other frames
+            
+#LAUREN'S FUNCTION
+def show_frame(self, page_class):
+        frame = self.frames.get(page_class)
+        if frame is None:
+                        frame = page_class(parent=self.container, controller=self)
+                        self.frames[page_class] = frame
+
+        frame.tkraise()
+
+
+#CHANGES THE LABEL OF THE DAYS LEFT FRAME
+def change_days(index):
+  global days, frequencyInt
+  #NEEDS TO ACCESS THE PILL OBJECTS FREQUENCY AND CHANGE IT TO AN INTEGER
+  if evening_pills[index].Efrequency == "twice":
+    frequencyInt = 2
+  else:
+    frequencyInt = 1
+    
+  total_pills_taken = evening_pills[index].Edosage * frequencyInt
+  days = evening_pills.Equantity / total_pills_taken
+  print("Number of days left: " + days)
+  
+  #setting the name to appropriate value 
+  name = evening_pills[index].Ename
+
 
 try:
         #PUT IN A TIME.SLEEP() SOMEWHERE TO ACT AS A TIMER FOR HOW LONG IT TAKES TO SCAN A PRESCRIPTION
