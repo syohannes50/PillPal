@@ -206,12 +206,10 @@ def set_throttle(channel, throttle_value):
 
     pwm.set_pwm(channel, 0, pwm_value)
   
-#SECOND FUNCITON TO CHANGE THROTTLE
-def set_throttle2(channel, throttle_value):
-    global pwm_value2
-    pwm_value2 = int(throttle_value)
-    pwm.set_pwm(channel, 0, pwm_value2)
-
+#function to change speed of motor
+def set_speed(channel, speed):
+    pwm.set_pwm(channel, 0, speed)
+    
 # VARIABLE TO TRACK THE STATE OF THE PHOTOELECTRIC SENSOR
 prev_obstacle_state = GPIO.HIGH  # Assuming no obstacle initially (FIGURE OUT IF THIS IS THE CORRECT SETTING)
 
@@ -232,7 +230,10 @@ def pillOut(index):
 
     print("Shook the container on channel", evening_pills[index].Echannel)
 
-    set_throttle2(evening_pills[index].Echannel, 10)
+    set_speed(evening_pills[index].Echannel, 327)
+    time.sleep(1)
+    stop_servos()
+    
     global prev_obstacle_state
     print("Starting while loop!")
     while True: # !!!! MAY LOOP FOREVER ---- WATCH OUT !!!!
