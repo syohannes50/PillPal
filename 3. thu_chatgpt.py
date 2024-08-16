@@ -152,7 +152,7 @@ def pillOut(index):
     time.sleep(10)
     stop_servos()
 # ---------------------------------------------------------------- GUI DISPlAY
-count = 0
+
 streakCount = 0
 button1_clicked = False
 
@@ -205,8 +205,8 @@ hi.pack(padx=10, pady=10)
 
 # Button to switch pages
 def next_page():
-    global count, button1_clicked
-    #count = (count + 1) % len(pages)
+    global button1_clicked
+    #count = (count + 1) % len(pages) (!!deleted count variable!!)
     #testing if this works below!!!
     show_page(2)
     
