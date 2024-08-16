@@ -270,6 +270,7 @@ def run_background_tasks():
             streak.configure(text=f"You're on a \n {streakCount} day streak!")
             print("Finished Dispensing!")
             show_page(0)
+            button1_clicked = False
 
 # Start background tasks in a separate thread
 threading.Thread(target=run_background_tasks, daemon=True).start()
