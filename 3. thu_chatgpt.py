@@ -151,7 +151,8 @@ def pillOut(index):
     set_throttle(evening_pills[index].Echannel, 1)
     time.sleep(10)
     stop_servos()
-# ---------------------------------------------------------------- GUI DISPlAY
+    
+# ------------------------------------------------------------------------ GUI DISPLAY
 
 days = 0
 name = ""
