@@ -12,7 +12,7 @@ import threading
 
 # Initialize ServoKit
 kit = ServoKit(channels=16)
-
+# ---------------------------------------------------------------- EVENING PILL CLASS AND LIST
 # Define and initialize an empty array to hold the evening pills
 evening_pills = []
 
@@ -35,7 +35,7 @@ frequency = None
 current_color = None
 quantity = None
 
-# MQTT settings
+# --------------------------------------------------------------- MQTT SETTINGS
 broker = 'mqtt.things.ph'
 port = 1883
 topic = "pibot"
@@ -93,7 +93,7 @@ def process_med_info(name, current_color, description, dosage, quantity, frequen
         pill = Evening(name, current_color, dosage, quantity, description, frequency)
         evening_pills.append(pill)
         print("New Evening Pill Added:", pill.__dict__)
-
+# ------------------------------------------------------------------------- DISPENSING MECHANISMS
 def set_servos():
     for pill in evening_pills:
         if pill.Econtainer == "blue":
@@ -151,9 +151,10 @@ def pillOut(index):
     set_throttle(evening_pills[index].Echannel, 1)
     time.sleep(10)
     stop_servos()
-
+# ---------------------------------------------------------------- GUI DISPlAY
 count = 0
 streakCount = 0
+button1_clicked = False
 
 # GUI Setup
 ctk.set_appearance_mode("light")
@@ -204,62 +205,71 @@ hi.pack(padx=10, pady=10)
 
 # Button to switch pages
 def next_page():
-    global count
-    count = (count + 1) % len(pages)
-    show_page(count)
+    global count, button1_clicked
+    #count = (count + 1) % len(pages)
+    #testing if this works below!!!
+    show_page(2)
+    
+    #set flag to true when button is clicked
+    button1_clicked = True
+    print("button clicked!")
 
 def show_page(page_index):
     for frame in pages:
         frame.pack_forget()
     pages[page_index].pack(padx=5, pady=5)
 
-button1 = ctk.CTkButton(readyframe, text="Continue", font=('Sans-Serif', 20, 'bold'), width=300, height=75, fg_color='#ff78ae', border_width=5, border_color='red', hover_color='red', command=next_page)
+button1 = ctk.CTkButton(readyframe, text="Dispense", font=('Sans-Serif', 20, 'bold'), width=300, height=75, fg_color='#ff78ae', border_width=5, border_color='red', hover_color='red', command=next_page)
 button1.place(relx=0.5, rely=0.65, anchor=tkinter.CENTER)
 
 pages = [streakframe, readyframe, dispenseframe, alertframe]
 
 evening_pills.append(Evening(Ename="pill1", Econtainer="blue", Edosage=2, Equantity=10, Edescription="with food", Efrequency ="twice"))
 def run_background_tasks():
-    global streakCount
+    global streakCount, button1_clicked
     client = connect_mqtt()
     subscribe(client)
     client.loop_start()
     
     while True:
+        #wait for the appropriate amount of time for a scan to occur
         time.sleep(10)
         set_servos()
         print("Assigned the pill objects to servos!")
+        
         show_page(1)  # Show Ready Page
         print("Ready to Dispense!")
         GPIO.output(led_pin, GPIO.HIGH)
         Buzz.start(20)
-        time.sleep(5)
+        #time.sleep(5)
+
+        if button_clicked == True:
+            
+            print("Time to dispense!")
+            GPIO.output(led_pin, GPIO.LOW)
+            Buzz.stop()
         
-        print("Alarm has sounded -- Time to dispense!")
-        GPIO.output(led_pin, GPIO.LOW)
-        Buzz.stop()
-        
-        for i in range(len(evening_pills)):
-            print(evening_pills[i].Econtainer + " dispensing")
-            for j in range(evening_pills[i].Edosage):
-                print(str(evening_pills[i].Edosage) + " pills dispensing")
-                print("Calling pillOut(), dispensing has started.")
-                pillOut(i)
-                print("Exit completed. Next pill is dispensing...")
+            for i in range(len(evening_pills)):
+                print(evening_pills[i].Econtainer + " dispensing")
+                for j in range(evening_pills[i].Edosage):
+                    print(str(evening_pills[i].Edosage) + " pills dispensing")
+                    print("Calling pillOut(), dispensing has started.")
+                    pillOut(i)
+                    print("Exit completed. Next pill is dispensing...")
                 
-                # Show alert frame
-                alertlabel.configure(text=f"You have {evening_pills[i].Equantity - j - 1} day(s) of {evening_pills[i].Ename} left")
-                show_page(3)  # Show Alert Page
-                window.update_idletasks()
-                time.sleep(5)  # Keep the alert frame visible for 5 seconds
-                show_page(0)  # Return to the initial page
+                    # Show alert frame
+                    alertlabel.configure(text=f"You have {evening_pills[i].Equantity - j - 1} day(s) of {evening_pills[i].Ename} left")
+                    show_page(3)  # Show Alert Page
+                    window.update_idletasks()
+                    time.sleep(5)  # Keep the alert frame visible for 5 seconds
+                    show_page(2)  # Return to the dispensing frame
                 
-            print("Next container is dispensing...")
-            time.sleep(1)
-        streakCount += 1
-        streak.configure(text=f"You're on a \n {streakCount} day streak!")
-        print("Finished Dispensing!")
-        show_page(0)
+                print("Next container is dispensing...")
+                time.sleep(2)
+            streakCount += 1
+            streak.configure(text=f"You're on a \n {streakCount} day streak!")
+            print("Finished Dispensing!")
+            show_page(0)
 
 # Start background tasks in a separate thread
 threading.Thread(target=run_background_tasks, daemon=True).start()
