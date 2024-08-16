@@ -153,6 +153,9 @@ def pillOut(index):
     stop_servos()
 # ---------------------------------------------------------------- GUI DISPlAY
 
+days = 0
+name = ""
+frequencyInt = 0
 streakCount = 0
 button1_clicked = False
 
@@ -197,7 +200,7 @@ alertframe.pack(padx=5, pady=5)
 alertframe.pack_propagate(False)
 alertframe.pack_forget()  # Hide the alert frame initially
 
-alertlabel = ctk.CTkLabel(alertframe, width=800, height=500, text="You have {days} day(s) of {name} left", text_color='black', font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
+alertlabel = ctk.CTkLabel(alertframe, width=800, height=500, text=f"You have {days} day(s) of {name} left", text_color='black', font=('Sans-Serif', 40, 'bold'), fg_color='#ffb9d5')
 alertlabel.place(relx=0.5, rely=0.55, anchor=tkinter.CENTER)
 
 hi = ctk.CTkLabel(alertframe, width=800, height=80, text="Hi, PillPal User", fg_color='#ffff9c', text_color='black', font=('Sans-Serif', 30, 'bold'))
@@ -219,12 +222,28 @@ def show_page(page_index):
         frame.pack_forget()
     pages[page_index].pack(padx=5, pady=5)
 
+def change_days(index):
+  global days, frequencyInt, name
+  #NEEDS TO ACCESS THE PILL OBJECTS FREQUENCY AND CHANGE IT TO AN INTEGER
+  if evening_pills[index].Efrequency == "twice":
+    frequencyInt = 2
+  else:
+    frequencyInt = 1
+    
+  total_pills_taken = evening_pills[index].Edosage * frequencyInt
+  days = evening_pills.Equantity / total_pills_taken
+  print("Number of days left: " + days)
+  
+  #setting the name to appropriate value 
+  name = evening_pills[index].Ename
+
 button1 = ctk.CTkButton(readyframe, text="Dispense", font=('Sans-Serif', 20, 'bold'), width=300, height=75, fg_color='#ff78ae', border_width=5, border_color='red', hover_color='red', command=next_page)
 button1.place(relx=0.5, rely=0.65, anchor=tkinter.CENTER)
 
 pages = [streakframe, readyframe, dispenseframe, alertframe]
 
 evening_pills.append(Evening(Ename="pill1", Econtainer="blue", Edosage=2, Equantity=10, Edescription="with food", Efrequency ="twice"))
+
 def run_background_tasks():
     global streakCount, button1_clicked
     client = connect_mqtt()
@@ -258,7 +277,8 @@ def run_background_tasks():
                     print("Exit completed. Next pill is dispensing...")
                 
                     # Show alert frame
-                    alertlabel.configure(text=f"You have {evening_pills[i].Equantity - j - 1} day(s) of {evening_pills[i].Ename} left")
+                    #alertlabel.configure(text=f"You have {evening_pills[i].Equantity - j - 1} day(s) of {evening_pills[i].Ename} left")
+                    change_days(i)
                     show_page(3)  # Show Alert Page
                     window.update_idletasks()
                     time.sleep(5)  # Keep the alert frame visible for 5 seconds
